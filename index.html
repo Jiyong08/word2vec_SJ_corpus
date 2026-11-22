@@ -95,10 +95,16 @@
       </div>
 
       <div class="neighbors-panel">
+        <!-- 품사 필터 모드 전환 바 -->
+        <div class="pos-filter-bar">
+          <button id="btn-mode-all" class="mode-btn active"><i class="fa-solid fa-layer-group"></i> 전체 품사</button>
+          <button id="btn-mode-same" class="mode-btn"><i class="fa-solid fa-tag"></i> 동일 품사만 <span id="current-pos-badge" class="pos-tag-pill"></span></button>
+        </div>
+
         <div class="neighbors-header">
           <div class="title-wrap">
             <h3><i class="fa-solid fa-ranking-star"></i> 유사도 높은 단어 Top 10</h3>
-            <span class="sort-indicator"><i class="fa-solid fa-arrow-down-wide-short"></i> 코사인 유사도 내림차순</span>
+            <span id="sort-indicator" class="sort-indicator"><i class="fa-solid fa-arrow-down-wide-short"></i> 코사인 유사도 내림차순</span>
           </div>
           <span id="neighbors-count" class="count-badge">0 / 10</span>
         </div>

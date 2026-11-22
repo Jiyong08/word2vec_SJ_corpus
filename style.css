@@ -475,8 +475,59 @@ html, body {
   overflow: hidden;
 }
 
+/* 품사 필터 모드 전환 바 */
+.pos-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 12px 20px 4px;
+  background: var(--bg-secondary);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+.mode-btn.active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.15);
+}
+
+.pos-tag-pill {
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  display: none;
+}
+
+.pos-tag-pill.visible {
+  display: inline-block;
+}
+
 .neighbors-header {
-  padding: 16px 20px 10px;
+  padding: 12px 20px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;

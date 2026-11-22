@@ -7,9 +7,12 @@
 const state = {
   vocab: [],
   neighbors: [],
+  samePosNeighbors: [],
   wordToIdx: new Map(),
   baseWordMap: new Map(),
   
+  filterMode: 'all', // 'all' | 'same'
+  currentIdx: null,
   center: null,
   currentNeighbors: [],
   
@@ -37,6 +40,11 @@ const searchSubmitBtn = document.getElementById('search-submit-btn');
 const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
 const quickChips = document.querySelectorAll('.chip');
 
+const btnModeAll = document.getElementById('btn-mode-all');
+const btnModeSame = document.getElementById('btn-mode-same');
+const currentPosBadge = document.getElementById('current-pos-badge');
+const sortIndicator = document.getElementById('sort-indicator');
+
 const neighborsList = document.getElementById('neighbors-list');
 const neighborsCount = document.getElementById('neighbors-count');
 const statCenterWord = document.getElementById('stat-center-word');
@@ -59,6 +67,7 @@ async function initApp() {
     
     state.vocab = data.vocab;
     state.neighbors = data.neighbors;
+    state.samePosNeighbors = data.same_pos || [];
     
     // 빠른 조회를 위한 해시맵 구축
     state.vocab.forEach((word, idx) => {
@@ -155,10 +164,32 @@ function selectWord(query) {
     return;
   }
   
-  const targetIdx = matches[0];
+  state.currentIdx = matches[0];
+  renderCurrentWord();
+}
+
+function renderCurrentWord() {
+  if (state.currentIdx === null) return;
+  const targetIdx = state.currentIdx;
   const targetWord = state.vocab[targetIdx];
-  const rawNeighbors = state.neighbors[targetIdx];
+  const posTag = targetWord.includes('/') ? targetWord.split('/').pop() : '';
+
+  if (posTag) {
+    currentPosBadge.textContent = posTag;
+    currentPosBadge.classList.add('visible');
+  } else {
+    currentPosBadge.classList.remove('visible');
+  }
+
+  const useSamePos = (state.filterMode === 'same' && state.samePosNeighbors.length > targetIdx);
+  const rawNeighbors = useSamePos ? state.samePosNeighbors[targetIdx] : state.neighbors[targetIdx];
   
+  if (useSamePos) {
+    sortIndicator.innerHTML = `<i class="fa-solid fa-tag"></i> 동일 품사(${posTag || '없음'}) 기준 내림차순`;
+  } else {
+    sortIndicator.innerHTML = `<i class="fa-solid fa-arrow-down-wide-short"></i> 전체 품사 유사도 내림차순`;
+  }
+
   state.center = {
     word: targetWord,
     x: 0,
@@ -189,6 +220,23 @@ function selectWord(query) {
   render();
   renderNeighborsList(state.currentNeighbors);
 }
+
+// 품사 필터 모드 전환 이벤트
+btnModeAll.addEventListener('click', () => {
+  if (state.filterMode === 'all') return;
+  state.filterMode = 'all';
+  btnModeAll.classList.add('active');
+  btnModeSame.classList.remove('active');
+  renderCurrentWord();
+});
+
+btnModeSame.addEventListener('click', () => {
+  if (state.filterMode === 'same') return;
+  state.filterMode = 'same';
+  btnModeSame.classList.add('active');
+  btnModeAll.classList.remove('active');
+  renderCurrentWord();
+});
 
 // ============================================================================
 // 3. 캔버스 2D 맵 렌더링
