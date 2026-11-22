@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세종 말뭉치 Word2Vec 2D 유사 단어 탐색기</title>
+  
+  <!-- 고품질 한글 웹폰트 Pretendard 로드 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 데이터 로딩 오버레이 -->
+  <div id="loading-overlay">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <h3>세종 말뭉치 Word2Vec 데이터 로딩 중...</h3>
+      <p id="loading-status">40,892개 단어 및 2D 벡터 좌표를 불러오고 있습니다.</p>
+    </div>
+  </div>
+
+  <div id="app-container">
+    <!-- 좌측/중앙: 2차원 인터랙티브 벡터 맵 -->
+    <main id="map-section">
+      <header id="map-header">
+        <div class="logo-area">
+          <div class="logo-icon"><i class="fa-solid fa-circle-nodes"></i></div>
+          <div class="logo-text">
+            <h1>Word2Vec 2D Vector Map</h1>
+            <span class="subtitle">세종 말뭉치 형태소 임베딩 (300D &rarr; 2D PCA, Top 10)</span>
+          </div>
+        </div>
+        
+        <div class="map-stats">
+          <span class="stat-badge" id="stat-vocab"><i class="fa-solid fa-database"></i> 40,892 단어</span>
+          <span class="stat-badge highlight" id="stat-center-word">중심: 탐색 대기</span>
+        </div>
+        
+        <div class="map-controls">
+          <button id="btn-zoom-in" title="확대"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+          <button id="btn-zoom-out" title="축소"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+          <button id="btn-reset-view" title="중앙 정렬"><i class="fa-solid fa-arrows-to-dot"></i></button>
+        </div>
+      </header>
+
+      <div id="canvas-wrapper">
+        <canvas id="vector-canvas"></canvas>
+        
+        <div id="distance-legend">
+          <div class="legend-item"><span class="legend-color center"></span> 중심 단어 (기준)</div>
+          <div class="legend-item"><span class="legend-color top3"></span> 유사도 1~3위</div>
+          <div class="legend-item"><span class="legend-color top10"></span> 유사도 4~10위</div>
+        </div>
+
+        <div id="tooltip" class="tooltip hidden"></div>
+      </div>
+      
+      <footer id="map-footer">
+        <div class="footer-hint">
+          <i class="fa-solid fa-lightbulb"></i> 팁: 마우스 휠로 <strong>확대/축소</strong>, 드래그로 <strong>화면 이동</strong>, 맵의 단어나 우측 목록을 <strong>클릭</strong>하면 해당 단어가 중앙으로 이동합니다.
+        </div>
+      </footer>
+    </main>
+
+    <!-- 우측: 최상단 검색창 및 Top 10 유사 단어 목록 -->
+    <aside id="sidebar">
+      <div class="search-panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-magnifying-glass"></i> 형태소 / 단어 검색</h2>
+          <span class="regex-badge" title="정규표현식 지원"><i class="fa-solid fa-code"></i> 정규식 가능</span>
+        </div>
+        
+        <div class="search-box-wrapper">
+          <div class="input-container">
+            <i class="fa-solid fa-terminal search-icon"></i>
+            <input type="text" id="search-input" placeholder="단어 또는 정규식 입력 (예: 세종, 사람, ^사랑.*)" autocomplete="off" spellcheck="false">
+            <button id="search-clear-btn" class="clear-btn hidden" title="지우기"><i class="fa-solid fa-xmark"></i></button>
+            <button id="search-submit-btn" class="submit-btn" title="검색"><i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+          <div id="autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
+        </div>
+
+        <div class="quick-chips-area">
+          <span class="chip-label">빠른 검색 예시:</span>
+          <div class="chips-list">
+            <button class="chip" data-query="세종/NNP">세종/NNP</button>
+            <button class="chip" data-query="사람/NNG">사람/NNG</button>
+            <button class="chip" data-query="하늘/NNG">하늘/NNG</button>
+            <button class="chip" data-query="사랑/NNG">사랑/NNG</button>
+            <button class="chip" data-query="이/JKS">이/JKS</button>
+            <button class="chip" data-query="은/JX">은/JX</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="neighbors-panel">
+        <div class="neighbors-header">
+          <div class="title-wrap">
+            <h3><i class="fa-solid fa-ranking-star"></i> 유사도 높은 단어 Top 10</h3>
+            <span class="sort-indicator"><i class="fa-solid fa-arrow-down-wide-short"></i> 코사인 유사도 내림차순</span>
+          </div>
+          <span id="neighbors-count" class="count-badge">0 / 10</span>
+        </div>
+
+        <div class="list-column-labels">
+          <span class="col-rank">순위</span>
+          <span class="col-word">단어 및 품사</span>
+          <span class="col-dist">유사도 &darr;</span>
+        </div>
+
+        <div id="neighbors-list" class="neighbors-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-compass-drafting"></i>
+            <p>단어를 검색하거나 선택해 주세요.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
